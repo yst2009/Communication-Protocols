@@ -1,0 +1,66 @@
+int lm75_read_tenths(int16_t *tenths) {
+    /* 1. ضبط المؤشر الداخلي على سجل الحرارة (Pointer = 0) */
+    i2c_start();
+    if (!i2c_write_byte(LM75_ADDR << 1)) { i2c_stop(); return 1; }
+    
+    // هذا هو السطر الناقص عندك:
+    if (!i2c_write_byte(0x00))           { i2c_stop(); return 1; }
+
+    /* 2. قراءة البايتين (Repeated Start) */    
+    i2c_start();
+    if (!i2c_write_byte((LM75_ADDR << 1) | 1)) { i2c_stop(); return 1; }
+    
+    uint8_t hi = i2c_read_byte(1);
+    uint8_t lo = i2c_read_byte(0);
+    i2c_stop();
+
+    /* التحويل لدرجات مئوية أعشار */
+    int16_t raw = (int16_t)(((uint16_t)hi << 8) | lo) >> 7;
+    *tenths = raw * 5;
+    return 0;
+}
+
+#include <avr/io.h>
+#include <stdio.h>
+#include <xc.h>
+#include "UART.h"
+#include "lcd.h"
+int main(void) {
+uart_init(9600);
+lcd_init();
+while (1){
+    int data=0;
+    data=uart_getc();
+    if(data==1){
+        lcd_set_cursor(0, 1); 
+        lcd_print("Danger");
+    }
+    if(data==2){
+        lcd_set_cursor(0, 1); 
+        lcd_print("Limit");
+    }
+    if(data==3){
+        lcd_set_cursor(0, 1); 
+        lcd_print("GOOD");
+    }
+    
+
+} 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
