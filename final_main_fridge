@@ -1,0 +1,74 @@
+#include <avr/io.h>
+#include <stdio.h>
+#include <util/delay.h>
+#include "config.h"
+#include "event.h"
+#include "uart.h"
+#include "i2c.h"
+#include "lcd.h"
+#include "eeprom24.h"
+#include "lm75.h"
+#include "clock.h"
+
+#define LR 0
+#define LY 1
+#define LG 2
+
+void led_on_Grean(void);
+void led_on_yellow(void);
+void led_on_Red(void);
+
+int main(void) {
+    DDRB |= (1 << LR) | (1 << LY) | (1 << LG);
+    uart_init(9600);
+    i2c_init();
+    lcd_init();
+
+
+    while (1) {
+        int16_t temp = 0;
+
+        if (lm75_read_tenths(&temp) == 0) { 
+            
+            lcd_set_cursor(0, 1); 
+            if (temp < 200 || temp > 800) {
+                led_on_Red();
+                lcd_print("Dan ");
+                uart_putc(1);
+            } 
+            else if (temp <= 300 || temp >= 700) {
+                led_on_yellow();
+                lcd_print("Warn");
+                uart_putc(2);
+
+            } 
+            else {
+                led_on_Grean();
+                lcd_print("Safe");
+                uart_putc(3);
+
+            }
+
+           eeprom_write(EE_ADDR, &temp, sizeof(temp));
+            _delay_ms(30);
+        }
+    }
+}
+
+void led_on_Grean(void) {
+    PORTB |= (1 << LG);
+    PORTB &= ~(1 << LY);
+    PORTB &= ~(1 << LR);
+}
+
+void led_on_yellow(void) {   
+    PORTB |= (1 << LY);
+    PORTB &= ~(1 << LR);
+    PORTB &= ~(1 << LG);
+}
+
+void led_on_Red(void) {
+    PORTB &= ~(1 << LY);
+    PORTB &= ~(1 << LG);
+    PORTB |= (1 << LR);
+}
